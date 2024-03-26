@@ -1,0 +1,8 @@
+/home/solrac/Projects/SimpleFontRendering/build/CMakeFiles/SimpleFontRendering.dir
+/home/solrac/Projects/SimpleFontRendering/build/CMakeFiles/edit_cache.dir
+/home/solrac/Projects/SimpleFontRendering/build/CMakeFiles/rebuild_cache.dir
+/home/solrac/Projects/SimpleFontRendering/build/vendor/CMakeFiles/edit_cache.dir
+/home/solrac/Projects/SimpleFontRendering/build/vendor/CMakeFiles/rebuild_cache.dir
+/home/solrac/Projects/SimpleFontRendering/build/vendor/glad/CMakeFiles/glad.dir
+/home/solrac/Projects/SimpleFontRendering/build/vendor/glad/CMakeFiles/edit_cache.dir
+/home/solrac/Projects/SimpleFontRendering/build/vendor/glad/CMakeFiles/rebuild_cache.dir

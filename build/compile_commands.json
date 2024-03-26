@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/solrac/Projects/SimpleFontRendering/build",
+  "command": "/usr/bin/cc -I/home/solrac/Projects/SimpleFontRendering/vendor/glad/include -std=gnu11 -o CMakeFiles/SimpleFontRendering.dir/main.c.o -c /home/solrac/Projects/SimpleFontRendering/main.c",
+  "file": "/home/solrac/Projects/SimpleFontRendering/main.c"
+},
+{
+  "directory": "/home/solrac/Projects/SimpleFontRendering/build",
+  "command": "/usr/bin/cc -I/home/solrac/Projects/SimpleFontRendering/vendor/glad/include -std=gnu11 -o vendor/glad/CMakeFiles/glad.dir/src/glad.c.o -c /home/solrac/Projects/SimpleFontRendering/vendor/glad/src/glad.c",
+  "file": "/home/solrac/Projects/SimpleFontRendering/vendor/glad/src/glad.c"
+}
+]

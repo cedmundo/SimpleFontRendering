@@ -1,0 +1,22 @@
+# ninja log v5
+0	295	1711425779031931610	vendor/glad/CMakeFiles/glad.dir/src/glad.c.o	2b0861ac23f101a6
+0	30	1711425849377179442	vendor/glad/libglad.a	b1e412813e8a47c5
+0	31	1711425849381179512	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+31	42	1711425849393179725	SimpleFontRendering	6ee90651d8e105b1
+0	37	1711425869237531591	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+37	47	1711425869249531803	SimpleFontRendering	6ee90651d8e105b1
+0	41	1711425958671116645	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+41	63	1711425958691117000	SimpleFontRendering	6ee90651d8e105b1
+0	40	1711426029412369670	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+40	56	1711426029428369953	SimpleFontRendering	6ee90651d8e105b1
+0	43	1711426205387484401	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+43	59	1711426205403484684	SimpleFontRendering	6ee90651d8e105b1
+0	48	1711426375242488443	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+0	59	1711426381758230580	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+1	45	1711426388137721673	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+0	37	1711426391357467370	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+37	62	1711426391381465481	SimpleFontRendering	6ee90651d8e105b1
+0	50	1711426628038756465	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+50	70	1711426628058755507	SimpleFontRendering	6ee90651d8e105b1
+0	37	1711426814595392079	CMakeFiles/SimpleFontRendering.dir/main.c.o	e41fd8d536f2834c
+37	67	1711426814623391183	SimpleFontRendering	6ee90651d8e105b1
