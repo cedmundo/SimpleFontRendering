@@ -9,6 +9,8 @@
 #include <GLFW/glfw3.h>
 // clang-format on
 
+#include <png.h>
+
 #define WINDOW_TITLE "SimpleFontRendering"
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
@@ -27,6 +29,7 @@ typedef enum {
 typedef enum {
   SUCCESS,
   ERROR_CANNOT_LOAD_DESC_FILE,
+  ERROR_CANNOT_LOAD_ATLAS_FILE,
   ERROR_CANNOT_LOAD_GLYPH_SHADER,
   ERROR_INVALID_DESCRIPTION,
 } StatusCode;
@@ -51,13 +54,17 @@ typedef struct {
   float xas[256];
   Mesh quads[256];
   unsigned shaderProgramId;
+  unsigned textureId;
 } BitmapFont;
 
 void Log(LogLevel level, const char *fmt, ...);
 unsigned LoadShader(const char *vsFilename, const char *fsFilename);
+unsigned LoadTexture(const char *filename);
 BitmapFont LoadBitmapFont(const char *atlasFilename, const char *descFilename);
 void UnloadBitmapFont(BitmapFont font);
-char *ReadFile(const char *filename);
+char *ReadTextFile(const char *filename);
+unsigned char *ReadPNGFile(const char *filename, unsigned *width,
+                           unsigned *height);
 bool HasPrefix(const char *line, const char *prefix);
 int GetLineAttrInt(const char *line, unsigned attrId);
 char *GetNextLine(char *line);
@@ -137,7 +144,7 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     {
       // Render
-      RenderText(font, 10.0f, 100.0f, "Hello world");
+      RenderText(font, 10.0f, 100.0f, "Medea china inutil");
     }
     // Finish render
     glfwPollEvents();
@@ -179,7 +186,7 @@ unsigned LoadShader(const char *vsFilename, const char *fsFilename) {
   unsigned vShaderId = 0;
   unsigned fShaderId = 0;
 
-  vsCode = ReadFile(vsFilename);
+  vsCode = ReadTextFile(vsFilename);
   if (vsCode == NULL) {
     Log(LOG_ERROR, "SHADER: could not load vertex shader: %s", vsFilename);
     goto terminate;
@@ -196,7 +203,7 @@ unsigned LoadShader(const char *vsFilename, const char *fsFilename) {
     goto terminate;
   }
 
-  fsCode = ReadFile(fsFilename);
+  fsCode = ReadTextFile(fsFilename);
   if (fsCode == NULL) {
     Log(LOG_ERROR, "SHADER: could not load fragment shader: %s", fsFilename);
     goto terminate;
@@ -245,6 +252,29 @@ terminate:
   return shaderProgramId;
 }
 
+unsigned LoadTexture(const char *filename) {
+  unsigned textureId = 0;
+  unsigned imageWidth = 0;
+  unsigned imageHeight = 0;
+  unsigned char *imageData = ReadPNGFile(filename, &imageWidth, &imageHeight);
+  if (imageData == NULL) {
+    return 0;
+  }
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glGenTextures(1, &textureId);
+  glBindTexture(GL_TEXTURE_2D, textureId);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)imageWidth, (int)imageHeight, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  free(imageData);
+  return textureId;
+}
+
 BitmapFont LoadBitmapFont(const char *atlasFilename, const char *descFilename) {
   char *fontDescData = NULL;
   char *line = NULL;
@@ -256,7 +286,13 @@ BitmapFont LoadBitmapFont(const char *atlasFilename, const char *descFilename) {
     goto terminate;
   }
 
-  fontDescData = ReadFile(descFilename);
+  font.textureId = LoadTexture(atlasFilename);
+  if (font.textureId == 0) {
+    font.status = ERROR_CANNOT_LOAD_ATLAS_FILE;
+    goto terminate;
+  }
+
+  fontDescData = ReadTextFile(descFilename);
   if (fontDescData == NULL) {
     font.status = ERROR_CANNOT_LOAD_DESC_FILE;
     goto terminate;
@@ -345,7 +381,7 @@ void UnloadBitmapFont(BitmapFont font) {
   }
 }
 
-char *ReadFile(const char *filename) {
+char *ReadTextFile(const char *filename) {
   FILE *file = fopen(filename, "re");
   if (file == NULL) {
     Log(LOG_ERROR, "FILE: could not read file: %s", filename);
@@ -366,6 +402,107 @@ char *ReadFile(const char *filename) {
   fread(data, sizeof(char), dataLen, file);
   fclose(file);
   return data;
+}
+
+unsigned char *ReadPNGFile(const char *filename, unsigned *width,
+                           unsigned *height) {
+  unsigned char *imageData = NULL;
+  FILE *file = NULL;
+  png_byte header[8] = {0};
+  png_structp pngHandler = NULL;
+  png_bytepp rowPointers = NULL;
+  png_infop pngInfo = NULL;
+  size_t rowBytes;
+  unsigned tmpHeight;
+
+  file = fopen(filename, "rbe");
+  if (file == NULL) {
+    Log(LOG_ERROR, "PNG: could not open file: %s", filename);
+    goto terminate;
+  }
+
+  // Read header
+  if (fread(header, 1, sizeof(header), file) < 8) {
+    Log(LOG_ERROR, "PNG: file is too short to be an PNG file: %s", filename);
+    goto terminate;
+  }
+
+  if (!png_check_sig(header, 8)) {
+    Log(LOG_ERROR, "PNG: not a valid PNG file: %s", filename);
+    goto terminate;
+  }
+
+  // Create read struct
+  pngHandler = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (pngHandler == NULL) {
+    Log(LOG_ERROR, "PNG: cannot initialize the library for file: %s", filename);
+    goto terminate;
+  }
+
+  // Get info struct
+  pngInfo = png_create_info_struct(pngHandler);
+  if (pngInfo == NULL) {
+    Log(LOG_ERROR, "PNG: cannot initialize pngInfo for file: %s", filename);
+    goto terminate;
+  }
+
+  // Exception handling code
+  if (setjmp(png_jmpbuf(pngHandler))) {
+    Log(LOG_ERROR, "PNG: cannot initialize exceptions for file: %s", filename);
+    goto terminate;
+  }
+
+  png_init_io(pngHandler, file);
+  png_set_sig_bytes(pngHandler, sizeof(header)); // shift header
+  png_read_info(pngHandler, pngInfo);            // read info
+
+  // Get image width and height from info
+  png_get_IHDR(pngHandler, pngInfo, width, height, NULL, NULL, NULL, NULL,
+               NULL);
+  png_read_update_info(pngHandler, pngInfo);
+  Log(LOG_INFO, "PNG: %s: %u x %u", filename, *width, *height);
+
+  // Row size in bytes
+  rowBytes = png_get_rowbytes(pngHandler, pngInfo);
+  tmpHeight = *height;
+
+  // Allocate image block
+  imageData = calloc(rowBytes * tmpHeight, sizeof(unsigned char));
+  if (imageData == NULL) {
+    Log(LOG_ERROR, "PNG: could not allocate memory for file: %s (%ld bytes)",
+        filename, rowBytes * tmpHeight);
+    goto terminate;
+  }
+
+  // Allocate memory for all rowPointers to help decode data
+  rowPointers = calloc(tmpHeight, sizeof(png_bytep));
+  if (rowPointers == NULL) {
+    Log(LOG_ERROR, "PNG: could not allocate memory for file: %s (%ld bytes)",
+        filename, tmpHeight * sizeof(png_bytep));
+  }
+
+  // Prepare rowPointers to point into imageData.
+  for (unsigned i = 0; i < tmpHeight; i++) {
+    rowPointers[tmpHeight - 1 - i] = imageData + i * rowBytes;
+  }
+
+  // Read full image into rowPointers (and thus, imageData)
+  png_read_image(pngHandler, rowPointers);
+
+terminate:
+  if (file != NULL) {
+    fclose(file);
+  }
+
+  if (pngHandler != NULL && pngInfo != NULL) {
+    png_destroy_read_struct(&pngHandler, &pngInfo, NULL);
+  }
+
+  if (rowPointers != NULL) {
+    free(rowPointers);
+  }
+
+  return imageData;
 }
 
 bool HasPrefix(const char *line, const char *prefix) {
@@ -402,13 +539,15 @@ Mesh MakeGlyphQuad(float imgW, float imgH, float x, float y, float w, float h) {
   Mesh mesh = {0};
   float relW = w / imgW;
   float relH = h / imgH;
+  // clang-format off
   float vertices[] = {
       // pos            // col            // uvs
-      relW, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, // top right
-      relW, relH, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
-      0.0f, relH, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-      0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, // top left
+      relW, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, (x + w) / imgW, 1.0f - (y / imgH),       // top right
+      relW, relH, 0.0f, 1.0f, 1.0f, 1.0f, (x + w) / imgW, 1.0f - ((y + h) / imgH), // bottom right
+      0.0f, relH, 0.0f, 1.0f, 1.0f, 1.0f, x/imgW,         1.0f - ((y + h) / imgH), // bottom left
+      0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, x/imgW,         1.0f - (y / imgH),       // top left
   };
+  // clang-format on
   const unsigned short indices[] = {
       0, 1, 3, // First triangle
       1, 2, 3, // Second triangle
@@ -450,7 +589,7 @@ void RenderText(BitmapFont font, float xPos, float yPos, const char *text) {
   float yOffset = yPos;
 
   float proj[16] = {0};
-  MakeOrthoProj(proj, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 100.0f);
+  MakeOrthoProj(proj, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 100.0f);
 
   for (size_t i = 0; i < textLen; i++) {
     unsigned id = (unsigned)text[i];
@@ -462,11 +601,14 @@ void RenderText(BitmapFont font, float xPos, float yPos, const char *text) {
 
     float model[16] = {0};
     float xRel = 0, yRel = 0;
-    WorldToViewport(&xRel, &yRel, xOffset + font.xos[id], yOffset);
+    WorldToViewport(&xRel, &yRel, xOffset + font.xos[id],
+                    yOffset + font.yos[id]);
     MakeGlyphTransform(model, xRel, yRel);
 
     unsigned pid = font.shaderProgramId;
     glUseProgram(pid);
+    glBindTexture(GL_TEXTURE_2D, font.textureId);
+
     glBindVertexArray(vao);
     glUniformMatrix4fv(glGetUniformLocation(pid, "model"), 1, GL_TRUE, model);
     glUniformMatrix4fv(glGetUniformLocation(pid, "proj"), 1, GL_FALSE, proj);

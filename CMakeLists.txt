@@ -12,9 +12,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 find_package(glfw3 REQUIRED)
+find_package(PNG REQUIRED)
 add_subdirectory(vendor)
 
 add_executable(SimpleFontRendering)
 target_sources(SimpleFontRendering PRIVATE main.c)
-target_link_libraries(SimpleFontRendering PRIVATE glfw glad)
+target_link_libraries(SimpleFontRendering PRIVATE glfw glad png)
 target_compile_options(SimpleFontRendering PRIVATE -Wall -g)
